@@ -50,7 +50,11 @@ export async function executar(sql: string, cfg: ConfigBanco): Promise<Resultado
   const conexao = await odbc().connect({ connectionString: stringConexao(cfg), connectionTimeout: 15, loginTimeout: 15 });
   try {
     await conexao.setIsolationLevel?.(odbc().SQL_TXN_READ_COMMITTED).catch(() => undefined);
-    const cursor = await conexao.query(sql, { cursor: true, fetchSize: 500, timeout: cfg.tempoMaxSegundos });
+    // fetchSize:1 é obrigatório: o driver ODBC do SQL Anywhere 17 não suporta
+    // array-fetch em bloco (fetchSize > 1 causa "Invalid cursor position" e, em
+    // alguns casos, segfault do processo Node). Buscar linha a linha é a forma
+    // estável de usar cursor com este driver — confirmado em teste real (nov/2026).
+    const cursor = await conexao.query(sql, { cursor: true, fetchSize: 1, timeout: cfg.tempoMaxSegundos });
     const linhas: unknown[][] = [];
     let colunas: string[] = [];
     let cortado = false;
@@ -58,6 +62,7 @@ export async function executar(sql: string, cfg: ConfigBanco): Promise<Resultado
       while (!cursor.noData) {
         const lote = await cursor.fetch();
         if (!colunas.length && lote.columns) colunas = lote.columns.map((c: any) => c.name);
+        if (lote.length === 0) break;
         for (const linha of lote as any[]) {
           if (linhas.length >= cfg.limiteLinhas) {
             cortado = true;
@@ -66,7 +71,7 @@ export async function executar(sql: string, cfg: ConfigBanco): Promise<Resultado
           if (!colunas.length) colunas = Object.keys(linha);
           linhas.push(colunas.map((c) => normalizar(linha[c])));
         }
-        if (cortado || lote.length === 0) break;
+        if (cortado) break;
       }
     } finally {
       await cursor.close().catch(() => undefined);
