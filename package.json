@@ -1,0 +1,28 @@
+{
+  "name": "@cabeda/dominio-ponte",
+  "version": "0.1.0",
+  "description": "Ponte MCP local e somente leitura entre o Claude e o banco Domínio (SQL Anywhere) via ODBC",
+  "type": "module",
+  "bin": { "dominio-ponte": "dist/index.js" },
+  "files": ["dist", "README.md", "PRIVACIDADE.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "odbc": "^2.4.9",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "repository": { "type": "git", "url": "https://github.com/compucel/dominio-ponte" },
+  "license": "MIT",
+  "keywords": ["mcp", "dominio", "odbc", "sql-anywhere", "contabilidade", "claude"]
+}
